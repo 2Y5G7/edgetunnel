@@ -1,0 +1,47 @@
+name: Auto Obfuscate JS Script
+
+# 触发条件：当主分支被推送（包括你点击 Sync fork 同步上游代码时）
+on:
+  push:
+    branches:
+      - main  # 如果你的默认分支是 master，请将这里改为 master
+    paths:
+      - 'src/your_script.js' # 【修改这里】只监听这个源文件的变动。如果它没更新，就不执行混淆，节省资源。
+
+jobs:
+  obfuscate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 确保有权限推送代码
+
+    steps:
+      # 1. 拉取你的仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 配置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. 安装混淆器并执行混淆
+      - name: Run Javascript Obfuscator
+        run: |
+          # 临时全局安装 javascript-obfuscator
+          npm install -g javascript-obfuscator
+          
+          # 执行混淆命令
+          # 用法: javascript-obfuscator <输入文件路径> --output <输出文件路径>
+          # 【修改这里】将下面的路径替换为你仓库中实际的文件路径
+          javascript-obfuscator src/your_script.js --output dist/your_script.obfuscated.js 
+          
+          # （可选）你可以添加更多的混淆参数，例如 --compact true --control-flow-flattening true 等
+
+      # 4. 将混淆后的文件自动 Commit 并 Push 回你的仓库
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto update obfuscated script [skip ci]"
+          # 【修改这里】告诉 git 需要提交哪个混淆后的文件
+          file_pattern: 'dist/your_script.obfuscated.js'
